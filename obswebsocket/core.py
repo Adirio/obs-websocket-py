@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import base64
+from collections import defaultdict
 import hashlib
 import json
 import logging
@@ -260,19 +261,70 @@ class RecvThread(threading.Thread):
 
 
 class EventManager:
-
+    """
+    EventManager holds a mapping that relates classes to a list of callbacks.
+    """
     def __init__(self):
-        self.functions = []
+        self._callbacks_mapping = defaultdict(list)
 
-    def register(self, callback, trigger):
-        self.functions.append((callback, trigger))
+    def _add(self, key, item):
+        self._callbacks_mapping[key].append(item)
 
-    def unregister(self, callback, trigger):
-        for c, t in self.functions:
-            if (c == callback) and (trigger is None or t == trigger):
-                    self.functions.remove((c, t))
+    def _remove(self, key, item):
+        try:
+            self._callbacks_mapping[key].remove(item)
+        except ValueError:
+            pass  # Nothing to remove
+        else:
+            # Keep the mapping clean of zero-length lists
+            if len(self._callbacks_mapping[key]) == 0:
+                del self._callbacks_mapping[key]
+
+    def register(self, callback, trigger=None):
+        """
+        Register a new callback for the trigger specified.
+
+        If None is specified as trigger, it registers the callback for every
+        trigger.
+
+        :param callback: Function to call when triggered
+        :param trigger: Class of event that triggers the callback
+        :return: Nothing
+        """
+        self._add(trigger, callback)
+
+    def unregister(self, callback, trigger=None):
+        """
+        Unregister a callback for the trigger specified.
+
+        If None is specified as trigger, it unregisters the callback for every
+        trigger.
+
+        :param callback: Function to stop calling when triggered
+        :param trigger: Class of event that triggered the callback
+        :return: Nothing
+        """
+        # Special case for trigger == None, need to remove from all lists
+        if trigger is None:
+            for trigger in self._callbacks_mapping:
+                self._remove(trigger, callback)
+        # Checking if trigger is already in the callbacks mapping prevents
+        # creating empty lists with remove
+        elif trigger in self._callbacks_mapping:
+            self._remove(trigger, callback)
 
     def trigger(self, data):
-        for callback, trigger in self.functions:
-            if trigger is None or isinstance(data, trigger):
+        """
+        Triggers the callbacks registered to the class of the provided object.
+
+        :param data: Object that triggers the callbacks
+        :return: Nothing
+        """
+        # Checking if type(data) is already in the callbacks mapping prevents
+        # creating empty lists with the loop
+        if type(data) in self._callbacks_mapping:
+            for callback in self._callbacks_mapping[type(data)]:
+                callback(data)
+        if None in self._callbacks_mapping:
+            for callback in self._callbacks_mapping[None]:
                 callback(data)
