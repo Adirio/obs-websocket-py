@@ -48,7 +48,16 @@ def generate_classes():
             for sec in data[event]:
                 for i in data[event][sec]:
                     f.write("class {}(Base{}):\n".format(i['name'], event))
-                    f.write("    \"\"\"{}\n\n".format(i['description']))
+                    f.write("    \"\"\"\n")
+                    f.write("    {}\n".format(
+                        i['description'].replace('\n', '\n    ')))
+
+                    if (
+                            ('returns' in i) and (len(i['returns']) > 0)
+                    ) or (
+                            ('params' in i) and (len(i['params']) > 0)
+                    ):
+                        f.write("\n")
 
                     arguments_default = []
                     arguments = []
@@ -84,7 +93,7 @@ def generate_classes():
                     except KeyError:
                         pass
 
-                    f.write("    \"\"\"\n\n")
+                    f.write("    \"\"\"\n")
                     f.write("    def __init__({}):\n".format(
                         ", ".join(
                             ["self"] +
