@@ -17,13 +17,13 @@ from . import events
 LOG = logging.getLogger(__name__)
 
 
-class obsws:
+class Client:
     """
     Core class for using obs-websocket-py
 
     Simple usage:
-        >>> import obswebsocket, obswebsocket.requests as obsrequests
-        >>> client = obswebsocket.obsws("localhost", 4444, "secret")
+        >>> from obswebsocket import Client, requests as obsrequests
+        >>> client = Client("localhost", 4444, "secret")
         >>> client.connect()
         >>> client.call(obsrequests.GetVersion()).getObsWebsocketVersion()
         u'4.1.0'
@@ -34,7 +34,7 @@ class obsws:
 
     def __init__(self, host='localhost', port=4444, password=''):
         """
-        Construct a new obsws wrapper
+        Construct a new Client wrapper
 
         :param host: Hostname to connect to
         :param port: TCP Port to connect to (Default is 4444)

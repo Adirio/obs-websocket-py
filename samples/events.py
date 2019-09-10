@@ -8,7 +8,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 sys.path.append('../')
-from obswebsocket import obsws, events
+from obswebsocket import Client, events
 
 host = "localhost"
 port = 4444
@@ -23,7 +23,7 @@ def on_switch(message):
     print("You changed the scene to {}".format(message.getSceneName()))
 
 
-ws = obsws(host, port, password)
+ws = Client(host, port, password)
 ws.register(on_event)
 ws.register(on_switch, events.SwitchScenes)
 ws.connect()

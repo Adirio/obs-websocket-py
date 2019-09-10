@@ -8,14 +8,14 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 sys.path.append('../')
-from obswebsocket import obsws, requests
+from obswebsocket import Client, requests
 
 
 host = "localhost"
 port = 4444
 password = "secret"
 
-ws = obsws(host, port, password)
+ws = Client(host, port, password)
 ws.connect()
 
 try:
