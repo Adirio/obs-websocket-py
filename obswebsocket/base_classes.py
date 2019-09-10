@@ -9,6 +9,9 @@ class _Base:
         self._name = '?'
         self._returns = {}
 
+    def __getitem__(self, item):
+        return self._returns[item]
+
     @property
     def name(self):
         return self._name
