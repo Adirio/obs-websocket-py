@@ -4,7 +4,7 @@
 import copy
 
 
-class Baseevents:
+class BaseEvent:
     def __init__(self):
         self._name = '?'
         self._returns = {}
@@ -18,7 +18,7 @@ class Baseevents:
         return "<{} event ({})>".format(self._name, self._returns)
 
 
-class Baserequests:
+class BaseRequest:
     def __init__(self):
         self._name = '?'
         self._params = {}

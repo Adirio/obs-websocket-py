@@ -11,7 +11,7 @@ import time
 import websocket
 
 from . import exceptions
-from . import base_classes
+from .base_classes import BaseRequest
 from . import events
 
 LOG = logging.getLogger(__name__)
@@ -155,7 +155,7 @@ class obsws:
             to the server.
         :return: Request object populated with response data.
         """
-        if not isinstance(obj, base_classes.Baserequests):
+        if not isinstance(obj, BaseRequest):
             raise exceptions.ObjectError(
                 "Call parameter is not a request object")
         payload = obj.data()

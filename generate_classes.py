@@ -30,10 +30,11 @@ def generate_classes():
     data = json.loads(urlopen(import_url).read().decode('utf-8'))
     print("Download OK. Generating python files...")
 
-    for event in ['requests', 'events']:
-        if event not in data:
-            raise Exception("Missing {} in data.".format(event))
-        with open('obswebsocket/{}.py'.format(event), 'w') as f:
+    for kinds in ['requests', 'events']:
+        if kinds not in data:
+            raise Exception("Missing {} in data.".format(kinds))
+        kind = kinds.rstrip('s').title()
+        with open('obswebsocket/{}.py'.format(kinds), 'w') as f:
 
             f.write("#!/usr/bin/env python\n")
             f.write("# -*- coding: utf-8 -*-\n")
@@ -43,11 +44,11 @@ def generate_classes():
             f.write("# (Generated on {}) #\n".format(
                 datetime.now().isoformat(" ")))
             f.write("\n")
-            f.write("from .base_classes import Base{}\n".format(event))
+            f.write("from .base_classes import Base{}\n".format(kind))
             f.write("\n\n")
-            for sec in data[event]:
-                for i in data[event][sec]:
-                    f.write("class {}(Base{}):\n".format(i['name'], event))
+            for sec in data[kinds]:
+                for i in data[kinds][sec]:
+                    f.write("class {}(Base{}):\n".format(i['name'], kind))
                     f.write("    \"\"\"\n")
                     f.write("    {}\n".format(
                         i['description'].replace('\n', '\n    ')))
@@ -121,7 +122,7 @@ def generate_classes():
                             [clean_var(a) + "=None" for a in arguments_default]
                         )
                     ))
-                    f.write("        Base{}.__init__(self)\n".format(event))
+                    f.write("        Base{}.__init__(self)\n".format(kind))
                     f.write("        self._name = '{}'\n".format(i['name']))
                     for r in returns:
                         f.write("        self._returns['{}'] = None\n".format(
