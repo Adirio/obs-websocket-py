@@ -1,41 +1,47 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import copy
+from copy import copy
 
 
-class BaseEvent:
+class _Base:
     def __init__(self):
         self._name = '?'
         self._returns = {}
 
+    @property
+    def name(self):
+        return self._name
+
     def input(self, data):
-        r = copy.copy(data)
-        del r['update-type']
-        self._returns = r
+        self._returns = copy(data)
+
+
+class BaseEvent(_Base):
+    def input(self, data):
+        _Base.input(self, data)
+        del self._returns['update-type']
 
     def __repr__(self):
         return "<{} event ({})>".format(self._name, self._returns)
 
 
-class BaseRequest:
+class BaseRequest(_Base):
     def __init__(self):
-        self._name = '?'
+        _Base.__init__(self)
         self._params = {}
-        self._returns = {}
         self._status = None
 
     def data(self):
-        payload = copy.copy(self._params)
+        payload = copy(self._params)
         payload.update({'request-type': self._name})
         return payload
 
     def input(self, data):
-        r = copy.copy(data)
-        del r['message-id']
-        self._status = (r['status'] == 'ok')
-        del r['status']
-        self._returns = r
+        _Base.input(self, data)
+        self._status = self._returns['status'] == 'ok'
+        del self._returns['message-id']
+        del self._returns['status']
 
     def __repr__(self):
         if self._status is None:
