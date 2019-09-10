@@ -6,43 +6,43 @@ import copy
 
 class Baseevents:
     def __init__(self):
-        self.name = '?'
-        self.datain = {}
+        self._name = '?'
+        self._returns = {}
 
     def input(self, data):
         r = copy.copy(data)
         del r['update-type']
-        self.datain = r
+        self._returns = r
 
     def __repr__(self):
-        return "<{} event ({})>".format(self.name, self.datain)
+        return "<{} event ({})>".format(self._name, self._returns)
 
 
 class Baserequests:
     def __init__(self):
-        self.name = '?'
-        self.datain = {}
-        self.dataout = {}
-        self.status = None
+        self._name = '?'
+        self._params = {}
+        self._returns = {}
+        self._status = None
 
     def data(self):
-        payload = copy.copy(self.dataout)
-        payload.update({'request-type': self.name})
+        payload = copy.copy(self._params)
+        payload.update({'request-type': self._name})
         return payload
 
     def input(self, data):
         r = copy.copy(data)
         del r['message-id']
-        self.status = (r['status'] == 'ok')
+        self._status = (r['status'] == 'ok')
         del r['status']
-        self.datain = r
+        self._returns = r
 
     def __repr__(self):
-        if self.status is None:
-            return "<{} request ({}) waiting>".format(self.name, self.dataout)
-        elif self.status:
+        if self._status is None:
+            return "<{} request ({}) waiting>".format(self._name, self._params)
+        elif self._status:
             return "<{} request ({}) called: success ({})>".format(
-                self.name, self.dataout, self.datain)
+                self._name, self._params, self._returns)
         else:
             return "<{} request ({}) called: failed ({})>".format(
-                self.name, self.dataout, self.datain)
+                self._name, self._params, self._returns)

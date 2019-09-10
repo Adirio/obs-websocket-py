@@ -102,20 +102,22 @@ def generate_classes():
                         )
                     ))
                     f.write("        Base{}.__init__(self)\n".format(event))
-                    f.write("        self.name = '{}'\n".format(i['name']))
+                    f.write("        self._name = '{}'\n".format(i['name']))
                     for r in returns:
-                        f.write("        self.datain['{}'] = None\n".format(r))
+                        f.write("        self._returns['{}'] = None\n".format(
+                            r))
                     for a in arguments:
-                        f.write("        self.dataout['{}'] = {}\n".format(
+                        f.write("        self._params['{}'] = {}\n".format(
                             a, clean_var(a)))
                     for a in arguments_default:
-                        f.write("        self.dataout['{}'] = {}\n".format(
+                        f.write("        self._params['{}'] = {}\n".format(
                             a, clean_var(a)))
                     f.write("\n")
                     for r in returns:
                         cc = "".join(x.capitalize() for x in r.split('-'))
                         f.write("    def get{}(self):\n".format(clean_var(cc)))
-                        f.write("        return self.datain['{}']\n".format(r))
+                        f.write("        return self._returns['{}']\n".format(
+                            r))
                         f.write("\n")
                     f.write("\n")
 
