@@ -71,6 +71,18 @@ def generate_classes():
                                     a['type']))
                                 f.write("            {}\n".format(
                                     a['description']))
+                                if '.' in a['name']:
+                                    # If the name contains a . it is
+                                    # describing a field of an object, we do
+                                    # not need to create variables, storage
+                                    # or accessors, just document it
+                                    continue
+                                if '[]' in a['name']:
+                                    # If the name contains a [] it is
+                                    # describing the items of an array, we do
+                                    # not need to create variables, storage
+                                    # or accessors, just document it
+                                    continue
                                 if 'optional' in a['type']:
                                     arguments_default.append(a['name'])
                                 else:
@@ -89,6 +101,14 @@ def generate_classes():
                                     r['type']))
                                 f.write("            {}\n".format(
                                     r['description']))
+                                if '.' in r['name']:
+                                    # If the name contains a . it is
+                                    # describing a field of an object, we do
+                                    # not need to create variables, storage
+                                    # or accessors, just document it
+                                    continue
+                                # .*. are used to describe arrays that are
+                                # already being captured by the above filter
                                 returns.append(r['name'])
                     except KeyError:
                         pass
