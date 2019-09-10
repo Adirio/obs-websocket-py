@@ -3,6 +3,7 @@
 
 from datetime import datetime
 import json
+from re import compile
 from six.moves.urllib.request import urlopen
 
 github_user = 'Palakis'
@@ -10,16 +11,15 @@ github_repo = 'obs-websocket'
 github_branch = '4.x-current'
 github_path = 'docs/generated/comments.json'
 
+caps = compile('(?<![A-Z])([A-Z])')
+
 
 def clean_var(string):
     """
-    Converts a string to a suitable variable name by removing not allowed
-    characters.
+    Converts a string to a suitable variable name by using snake case and
+    replacing - by _.
     """
-    for ch in ['-', '.', '*']:
-            string = string.replace(ch, '_')
-    string = string.replace('[]', '')
-    return string
+    return caps.sub(r'_\1', string).lower().lstrip('_').replace('-', '_')
 
 
 def generate_classes():
