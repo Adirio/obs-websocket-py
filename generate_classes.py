@@ -115,7 +115,8 @@ def generate_classes():
                     f.write("\n")
                     for r in returns:
                         cc = "".join(x.capitalize() for x in r.split('-'))
-                        f.write("    def get{}(self):\n".format(clean_var(cc)))
+                        f.write("    @property\n")
+                        f.write("    def {}(self):\n".format(clean_var(cc)))
                         f.write("        return self._returns['{}']\n".format(
                             r))
                         f.write("\n")
