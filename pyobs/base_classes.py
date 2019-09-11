@@ -4,7 +4,7 @@
 from copy import copy
 
 
-class _Base:
+class _Base(object):
     def __init__(self):
         self._name = '?'
         self._returns = {}
