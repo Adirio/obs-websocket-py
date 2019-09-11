@@ -1,7 +1,11 @@
 # pyobs
-Python library to communicate with an [obs-websocket](https://github.com/Palakis/obs-websocket) server.
+Python library to communicate with an [obs-websocket](
+https://github.com/Palakis/obs-websocket) server.
 
 _Licensed under the MIT License_
+
+Based on the work of [Guillaume "Elektordi" Genty](https://github.com/Elektordi
+) in [obs-websocket-py](https://github.com/Elektordi/obs-websocket-py).
 
 ## Project pages
 
@@ -20,7 +24,8 @@ in your python project root.
 
 ## Usage
 
-See python scripts in the [samples](https://github.com/Adirio/pyobs/tree/master/samples) directory.
+See python scripts in the [samples](
+https://github.com/Adirio/pyobs/tree/master/samples) directory.
 
 Or take a look at the documentation below:
 
@@ -110,6 +115,7 @@ pyobs.Client = class Client(builtins.object)
 
 ## Problems?
 
-Please check on [Github project issues](https://github.com/Adirio/pyobs/issues), and if nobody else have experienced it 
-before, you can [file a new issue](https://github.com/Adirio/pyobs/issues/new).
+Please check on [Github project issues](https://github.com/Adirio/pyobs/issues
+), and if nobody else has experienced it before, you can [file a new issue](
+https://github.com/Adirio/pyobs/issues/new).
 
