@@ -1,4 +1,4 @@
-from obswebsocket import Client, requests, events
+from pyobs import Client, requests, events
 
 host = "127.0.0.1"
 port = 4444

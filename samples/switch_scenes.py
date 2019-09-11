@@ -8,7 +8,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 sys.path.append('../')
-from obswebsocket import Client, requests
+from pyobs import Client, requests
 
 
 host = "localhost"

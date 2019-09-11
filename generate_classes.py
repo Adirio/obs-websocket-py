@@ -34,7 +34,7 @@ def generate_classes():
         if kinds not in data:
             raise Exception("Missing {} in data.".format(kinds))
         kind = kinds.rstrip('s').title()
-        with open('obswebsocket/{}.py'.format(kinds), 'w') as f:
+        with open('pyobs/{}.py'.format(kinds), 'w') as f:
 
             f.write("#!/usr/bin/env python\n")
             f.write("# -*- coding: utf-8 -*-\n")

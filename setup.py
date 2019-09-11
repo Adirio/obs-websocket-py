@@ -31,7 +31,7 @@ class UpdateClasses(sdist):
 
 setup(
     name='pyobs',
-    packages=['obswebsocket'],
+    packages=['pyobs'],
     cmdclass={'sdist': UpdateClasses},
     license='MIT',
     version=version,

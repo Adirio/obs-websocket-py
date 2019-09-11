@@ -7,4 +7,4 @@ Python library to communicate with an obs-websocket server.
 
 from .core import Client
 
-name = "py_obs"
+name = "pyobs"

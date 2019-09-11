@@ -1,4 +1,4 @@
-# obs-websocket-py
+# pyobs
 Python library to communicate with an [obs-websocket](https://github.com/Palakis/obs-websocket) server.
 
 _Licensed under the MIT License_
@@ -23,16 +23,16 @@ See python scripts in the [samples](https://github.com/Adirio/pyobs/tree/master/
 
 Or take a look at the documentation below:
 
-_Output of `pydoc obswebsocket.Client`:_
+_Output of `pydoc pyobs.Client`:_
 
 ```
-Help on class Client in obswebsocket:
+Help on class Client in pyobs:
 
-obswebsocket.Client = class Client(builtins.object)
- |  Core class for using obs-websocket-py
+pyobs.Client = class Client(builtins.object)
+ |  Core class for using pyobs
  |
  |  Simple usage:
- |      >>> from obswebsocket import Client, requests as obsrequests
+ |      >>> from pyobs import Client, requests as obsrequests
  |      >>> client = Client("localhost", 4444, "secret")
  |      >>> client.connect()
  |      >>> client.call(obsrequests.GetVersion()).getObsWebsocketVersion()
