@@ -2,13 +2,17 @@
 # -*- coding: utf-8 -*-
 
 
-class ConnectionFailure(Exception):
+class PyobsException(Exception):
     pass
 
 
-class MessageTimeout(Exception):
+class ConnectionFailure(PyobsException):
     pass
 
 
-class ObjectError(Exception):
+class MessageTimeout(PyobsException):
+    pass
+
+
+class ObjectError(PyobsException):
     pass
