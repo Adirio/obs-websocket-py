@@ -7,15 +7,11 @@ from setuptools.command.sdist import sdist
 
 version = "0.4"
 
-# Convert README from Markdown to reStructuredText
-description = "Please take a look at README.md"
 try:
-    description = open('README.md', 'r').read()
-    import pypandoc
-    description = pypandoc.convert_text(description, 'rst', 'markdown_github')
-except:
-    pass
-# If not possible, leave it in Markdown...
+    with open('README.md', 'r') as readme_file:
+        description = readme_file.read()
+except IOError:
+    description = "Please take a look at the README.md"
 
 
 # Generate classes
