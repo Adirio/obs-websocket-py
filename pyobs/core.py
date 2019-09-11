@@ -2,23 +2,22 @@
 # -*- coding: utf-8 -*-
 
 import base64
-from collections import defaultdict
 import hashlib
 import json
 import logging
 import socket
-import threading
-import time
+from threading import Lock, Thread
 import websocket
 
 from . import events
 from .base_classes import BaseRequest
-from .exceptions import ConnectionFailure, MessageTimeout, ObjectError
+from .exceptions import ConnectionFailure, ObjectError
+from .handlers import EventHandler, ResponseHandler
 
 LOG = logging.getLogger(__name__)
 
 
-class Client:
+class Client(object):
     """
     Core class for using pyobs
 
@@ -26,7 +25,7 @@ class Client:
         >>> from pyobs import Client, requests as obsrequests
         >>> client = Client("localhost", 4444, "secret")
         >>> client.connect()
-        >>> client.call(obsrequests.GetVersion()).obs_websocket_version
+        >>> client.execute(obsrequests.GetVersion()).obs_websocket_version
         u'4.1.0'
         >>> client.disconnect()
 
@@ -42,15 +41,43 @@ class Client:
         :param password: Password for the websocket server (Leave this field
             empty if no auth enabled on the server)
         """
-        self.id = 1
-        self.thread_recv = None
-        self.ws = None
-        self.eventmanager = EventManager()
-        self.answers = {}
+        # Incremental id
+        self._id = 0
+        self._id_lock = Lock()
+        # Websocket client
+        self._ws = None  # type: websocket.WebSocket
+        # Event handler
+        self._event_handler = EventHandler()
+        # Response handler
+        self._response_handler = ResponseHandler()
+        # Server thread that will listen
+        self._server_thread = None  # type: WSServer
 
+        # Address and authentication
         self.host = host
         self.port = port
         self.password = password
+
+    @property
+    def _next_id(self):
+        with self._id_lock:
+            self._id += 1
+            return self._id
+
+    # Required for the ServerThread to be able to access
+    @property
+    def ws(self):
+        return self._ws
+
+    # Required for the ServerThread to be able to access
+    @property
+    def event_handler(self):
+        return self._event_handler
+
+    # Required for the ServerThread to be able to access
+    @property
+    def response_handler(self):
+        return self._response_handler
 
     def connect(self, host=None, port=None):
         """
@@ -63,15 +90,53 @@ class Client:
         if port is not None:
             self.port = port
 
+        if self._server_thread is not None:
+            self._server_thread.stop()
+            self._server_thread.join()
+
         try:
-            self.ws = websocket.WebSocket()
+            self._ws = websocket.WebSocket()
             LOG.info("Connecting...")
-            self.ws.connect("ws://{}:{}".format(self.host, self.port))
+            self._ws.connect("ws://{}:{}".format(self.host, self.port))
             LOG.info("Connected!")
             self._auth(self.password)
-            self._run_threads()
         except socket.error as e:
             raise ConnectionFailure(str(e))
+
+        self._server_thread = WSServer(self)
+        self._server_thread.start()
+
+    def _auth(self, password):
+        self.ws.send(json.dumps({
+            "request-type": "GetAuthRequired",
+            "message-id": str(self._next_id),
+        }))
+        result = json.loads(self.ws.recv())
+
+        if result['status'] != 'ok':
+            raise ConnectionFailure(result['error'])
+
+        if result.get('authRequired'):
+            secret = base64.b64encode(
+                hashlib.sha256(
+                    (password + result['salt']).encode('utf-8')
+                ).digest()
+            )
+            auth = base64.b64encode(
+                hashlib.sha256(
+                    secret + result['challenge'].encode('utf-8')
+                ).digest()
+            ).decode('utf-8')
+
+            self.ws.send(json.dumps({
+                "request-type": "Authenticate",
+                "message-id": str(self._next_id),
+                "auth": auth,
+            }))
+            result = json.loads(self.ws.recv())
+
+            if result['status'] != 'ok':
+                raise ConnectionFailure(result['error'])
 
     def reconnect(self):
         """
@@ -93,96 +158,37 @@ class Client:
         :return: Nothing
         """
         LOG.info("Disconnecting...")
-        if self.thread_recv is not None:
-            self.thread_recv.running = False
+        if self._server_thread is not None:
+            self._server_thread.stop()
 
         try:
             self.ws.close()
         except socket.error:
             pass
 
-        if self.thread_recv is not None:
-            self.thread_recv.join()
-            self.thread_recv = None
+        if self._server_thread is not None:
+            self._server_thread.join()
+            self._server_thread = None
 
-    def _auth(self, password):
-        auth_payload = {
-            "request-type": "GetAuthRequired",
-            "message-id": str(self.id),
-        }
-        self.id += 1
-        self.ws.send(json.dumps(auth_payload))
-        result = json.loads(self.ws.recv())
-
-        if result['status'] != 'ok':
-            raise ConnectionFailure(result['error'])
-            
-        if result.get('authRequired'):
-            secret = base64.b64encode(
-                hashlib.sha256(
-                    (password + result['salt']).encode('utf-8')
-                ).digest()
-            )
-            auth = base64.b64encode(
-                hashlib.sha256(
-                    secret + result['challenge'].encode('utf-8')
-                ).digest()
-            ).decode('utf-8')
-
-            auth_payload = {
-                "request-type": "Authenticate",
-                "message-id": str(self.id),
-                "auth": auth,
-            }
-            self.id += 1
-            self.ws.send(json.dumps(auth_payload))
-            result = json.loads(self.ws.recv())
-            if result['status'] != 'ok':
-                raise ConnectionFailure(result['error'])
-        pass
-
-    def _run_threads(self):
-        if self.thread_recv is not None:
-            self.thread_recv.running = False
-        self.thread_recv = RecvThread(self)
-        self.thread_recv.daemon = True
-        self.thread_recv.start()
-
-    def call(self, req):
+    def execute(self, req: BaseRequest):
         """
-        Make a call to the OBS server through the Websocket.
+        Execute a request to the OBS server through the Websocket.
 
-        :param req: Request (class from pyobs.requests module) to send to the
-            server.
+        :param req: Request to send to the server.
         :return: Request object populated with response data.
         """
         if not isinstance(req, BaseRequest):
             raise ObjectError("Call parameter is not a request object")
-        req.answer(self.send(req.payload))
-        return req
 
-    def send(self, data):
-        """
-        Make a raw json call to the OBS server through the Websocket.
+        message_id = self._next_id
+        self._response_handler[message_id] = req
 
-        :param data: Request (python dict) to send to the server. Do not
-            include field "message-id".
-        :return: Response (python dict) from the server.
-        """
-        message_id = str(self.id)
-        self.id += 1
-        data["message-id"] = message_id
-        LOG.debug("Sending message id {}: {}".format(message_id, data))
-        self.ws.send(json.dumps(data))
-        return self._wait_message(message_id)
+        payload = req.payload
+        payload['message-id'] = str(message_id)
+        LOG.debug("Sending message id {}: {}".format(message_id, payload))
+        self._ws.send(json.dumps(payload))
 
-    def _wait_message(self, message_id):
-        timeout = time.time() + 60  # Timeout = 60s
-        while time.time() < timeout:
-            if message_id in self.answers:
-                return self.answers.pop(message_id)
-            time.sleep(0.1)
-        raise MessageTimeout("No answer for message {}".format(message_id))
+        return self._response_handler[message_id]
 
     def register(self, func, event=None):
         """
@@ -193,7 +199,7 @@ class Client:
             hook on. Default is None, which means trigger on all events.
         :return: Nothing
         """
-        self.eventmanager.register(func, event)
+        self._event_handler.register(func, event)
 
     def unregister(self, func, event=None):
         """
@@ -205,122 +211,57 @@ class Client:
             for all events.
         :return: Nothing
         """
-        self.eventmanager.unregister(func, event)
+        self._event_handler.unregister(func, event)
 
 
-class RecvThread(threading.Thread):
+class WSServer(Thread):
+    """Websocket server that listens and routes incoming messages."""
+    def __init__(self, client: Client):
+        self._client = client
+        self._running = True
+        Thread.__init__(self, daemon=True)
 
-    def __init__(self, core):
-        self.core = core
-        self.ws = core.ws
-        self.running = True
-        threading.Thread.__init__(self)
+    def stop(self):
+        self._running = False
 
     def run(self):
-        while self.running:
-            message = ""
+        LOG.debug("Starting server.")
+        while self._running:
+            raw_msg = ""
             try:
-                message = self.ws.recv()
+                raw_msg = self._client.ws.recv()
 
-                # recv() can return an empty string (Issue #6)
-                if not message:
+                # Skipping empty receives (see Elektordi/obs-websocket-py#6)
+                if not raw_msg:
                     continue
 
-                result = json.loads(message)
-                if 'update-type' in result:
-                    LOG.debug("Got message: {}".format(result))
-                    obj = self.build_event(result)
-                    self.core.eventmanager.trigger(obj)
-                elif 'message-id' in result:
-                    LOG.debug("Got answer for id {}: {}".format(
-                        result['message-id'], result))
-                    self.core.answers[result['message-id']] = result
+                message = json.loads(raw_msg)
+                if 'update-type' in message:
+                    LOG.debug("Received event: {}".format(message))
+                    self._handle_event(message)
+                elif 'message-id' in message:
+                    LOG.debug("Received answer for id {}: {}".format(
+                        message['message-id'], message))
+                    self._handle_response(message)
                 else:
-                    LOG.warning("Unknown message: {}".format(result))
-            except websocket.WebSocketConnectionClosedException:
-                if self.running:
-                    self.core.reconnect()
-            except (ValueError, ObjectError) as e:
-                LOG.warning("Invalid message: {} ({})".format(message, e))
-        # end while
-        LOG.debug("RecvThread ended.")
+                    LOG.warning("Unknown message: {}".format(message))
 
-    @staticmethod
-    def build_event(data):
-        name = data["update-type"]
+            except websocket.WebSocketConnectionClosedException:
+                if self._running:
+                    self._client.reconnect()
+            except (ValueError, ObjectError) as e:
+                LOG.warning("Invalid message: {} ({})".format(raw_msg, e))
+
+        LOG.debug("Server closed.")
+
+    def _handle_event(self, message: dict):
+        name = message["update-type"]
         try:
             cls = getattr(events, name)
         except AttributeError:
             raise ObjectError("Invalid event type {}".format(name))
         else:
-            return cls.from_message(data)
+            self._client.event_handler.trigger(cls.from_message(message))
 
-
-class EventManager:
-    """
-    EventManager holds a mapping that relates classes to a list of callbacks.
-    """
-    def __init__(self):
-        self._callbacks_mapping = defaultdict(list)
-
-    def _add(self, key, item):
-        self._callbacks_mapping[key].append(item)
-
-    def _remove(self, key, item):
-        try:
-            self._callbacks_mapping[key].remove(item)
-        except ValueError:
-            pass  # Nothing to remove
-        else:
-            # Keep the mapping clean of zero-length lists
-            if len(self._callbacks_mapping[key]) == 0:
-                del self._callbacks_mapping[key]
-
-    def register(self, callback, trigger=None):
-        """
-        Register a new callback for the trigger specified.
-
-        If None is specified as trigger, it registers the callback for every
-        trigger.
-
-        :param callback: Function to call when triggered
-        :param trigger: Class of event that triggers the callback
-        :return: Nothing
-        """
-        self._add(trigger, callback)
-
-    def unregister(self, callback, trigger=None):
-        """
-        Unregister a callback for the trigger specified.
-
-        If None is specified as trigger, it unregisters the callback for every
-        trigger.
-
-        :param callback: Function to stop calling when triggered
-        :param trigger: Class of event that triggered the callback
-        :return: Nothing
-        """
-        # Special case for trigger == None, need to remove from all lists
-        if trigger is None:
-            for trigger in self._callbacks_mapping:
-                self._remove(trigger, callback)
-        # Checking if trigger is already in the callbacks mapping prevents
-        # creating empty lists with remove
-        elif trigger in self._callbacks_mapping:
-            self._remove(trigger, callback)
-
-    def trigger(self, data):
-        """
-        Triggers the callbacks registered to the class of the provided object.
-
-        :param data: Object that triggers the callbacks
-        :return: Nothing
-        """
-        # Checking if type(data) is already in the callbacks mapping prevents
-        # creating empty lists with the loop
-        if type(data) in self._callbacks_mapping:
-            for callback in self._callbacks_mapping[type(data)]:
-                callback(data)
-        if None in self._callbacks_mapping:
-            for callback in self._callbacks_mapping[None]:
-                callback(data)
+    def _handle_response(self, message: dict):
+        self._client.response_handler.answer(message['message-id'], message)
