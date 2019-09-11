@@ -20,10 +20,10 @@ LOG = logging.getLogger(__name__)
 
 class Client:
     """
-    Core class for using obs-websocket-py
+    Core class for using pyobs
 
     Simple usage:
-        >>> from obswebsocket import Client, requests as obsrequests
+        >>> from pyobs import Client, requests as obsrequests
         >>> client = Client("localhost", 4444, "secret")
         >>> client.connect()
         >>> client.call(obsrequests.GetVersion()).obs_websocket_version
@@ -152,8 +152,8 @@ class Client:
         """
         Make a call to the OBS server through the Websocket.
 
-        :param obj: Request (class from obswebsocket.requests module) to send
-            to the server.
+        :param obj: Request (class from pyobs.requests module) to send to the
+            server.
         :return: Request object populated with response data.
         """
         if not isinstance(obj, BaseRequest):
@@ -193,8 +193,8 @@ class Client:
         Register a new hook in the websocket client
 
         :param func: Callback function pointer for the hook
-        :param event: Event (class from obswebsocket.events module) to trigger
-            the hook on. Default is None, which means trigger on all events.
+        :param event: Event (class from pyobs.events module) to trigger the
+            hook on. Default is None, which means trigger on all events.
         :return: Nothing
         """
         self.eventmanager.register(func, event)
@@ -204,9 +204,9 @@ class Client:
         Unregister a new hook in the websocket client
 
         :param func: Callback function pointer for the hook
-        :param event: Event (class from obswebsocket.events module) which
-            triggered the hook on. Default is None, which means unregister this
-            function for all events.
+        :param event: Event (class from pyobs.events module) which triggered
+            the hook on. Default is None, which means unregister this function
+            for all events.
         :return: Nothing
         """
         self.eventmanager.unregister(func, event)

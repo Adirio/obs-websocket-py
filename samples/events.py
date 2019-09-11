@@ -8,7 +8,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 sys.path.append('../')
-from obswebsocket import Client, events
+from pyobs import Client, events
 
 host = "localhost"
 port = 4444
