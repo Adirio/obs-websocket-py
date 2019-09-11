@@ -26,7 +26,7 @@ class Client:
         >>> from obswebsocket import Client, requests as obsrequests
         >>> client = Client("localhost", 4444, "secret")
         >>> client.connect()
-        >>> client.call(obsrequests.GetVersion()).getObsWebsocketVersion()
+        >>> client.call(obsrequests.GetVersion()).obs_websocket_version
         u'4.1.0'
         >>> client.disconnect()
 
