@@ -148,21 +148,18 @@ class Client:
         self.thread_recv.daemon = True
         self.thread_recv.start()
 
-    def call(self, obj):
+    def call(self, req):
         """
         Make a call to the OBS server through the Websocket.
 
-        :param obj: Request (class from pyobs.requests module) to send to the
+        :param req: Request (class from pyobs.requests module) to send to the
             server.
         :return: Request object populated with response data.
         """
-        if not isinstance(obj, BaseRequest):
-            raise exceptions.ObjectError(
-                "Call parameter is not a request object")
-        payload = obj.data()
-        r = self.send(payload)
-        obj.input(r)
-        return obj
+        if not isinstance(req, BaseRequest):
+            raise ObjectError("Call parameter is not a request object")
+        req.answer(self.send(req.payload))
+        return req
 
     def send(self, data):
         """
@@ -253,11 +250,11 @@ class RecvThread(threading.Thread):
     def build_event(data):
         name = data["update-type"]
         try:
-            obj = getattr(events, name)()
+            cls = getattr(events, name)
         except AttributeError:
-            raise exceptions.ObjectError("Invalid event {}".format(name))
-        obj.input(data)
-        return obj
+            raise exceptions.ObjectError("Invalid event type {}".format(name))
+        else:
+            return cls.from_message(data)
 
 
 class EventManager:
