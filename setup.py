@@ -30,18 +30,18 @@ class UpdateClasses(sdist):
 
 
 setup(
-    name='obs-websocket-py',
+    name='pyobs',
     packages=['obswebsocket'],
     cmdclass={'sdist': UpdateClasses},
     license='MIT',
     version=version,
     description='Python library to communicate with an obs-websocket server.',
     long_description=description,
-    author='Guillaume "Elektordi" Genty',
-    author_email='elektordi@elektordi.net',
-    url='https://github.com/Elektordi/obs-websocket-py',
-    download_url='https://github.com/Elektordi/obs-websocket-py/archive/{}.tar'
-                 '.gz'.format(version),
+    author='Adrián "Adirio" Orive',
+    author_email='adrian.orive.oneca@gmail.com',
+    url='https://github.com/Adirio/pyobs',
+    download_url='https://github.com/Adirio/pyobs/archive/{}.tar.gz'.format(
+        version),
     keywords=['obs', 'obs-studio', 'websocket'],
     classifiers=[
         'License :: OSI Approved :: MIT License',
