@@ -37,6 +37,7 @@ setup(
     version=version,
     description='Python library to communicate with an obs-websocket server.',
     long_description=description,
+    long_description_content_type="text/markdown",
     author='Adrián "Adirio" Orive',
     author_email='adrian.orive.oneca@gmail.com',
     url='https://github.com/Adirio/pyobs',
