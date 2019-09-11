@@ -11,9 +11,9 @@ import threading
 import time
 import websocket
 
-from . import exceptions
-from .base_classes import BaseRequest
 from . import events
+from .base_classes import BaseRequest
+from .exceptions import ConnectionFailure, MessageTimeout, ObjectError
 
 LOG = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class Client:
             self._auth(self.password)
             self._run_threads()
         except socket.error as e:
-            raise exceptions.ConnectionFailure(str(e))
+            raise ConnectionFailure(str(e))
 
     def reconnect(self):
         """
@@ -115,7 +115,7 @@ class Client:
         result = json.loads(self.ws.recv())
 
         if result['status'] != 'ok':
-            raise exceptions.ConnectionFailure(result['error'])
+            raise ConnectionFailure(result['error'])
             
         if result.get('authRequired'):
             secret = base64.b64encode(
@@ -138,7 +138,7 @@ class Client:
             self.ws.send(json.dumps(auth_payload))
             result = json.loads(self.ws.recv())
             if result['status'] != 'ok':
-                raise exceptions.ConnectionFailure(result['error'])
+                raise ConnectionFailure(result['error'])
         pass
 
     def _run_threads(self):
@@ -182,8 +182,7 @@ class Client:
             if message_id in self.answers:
                 return self.answers.pop(message_id)
             time.sleep(0.1)
-        raise exceptions.MessageTimeout("No answer for message {}".format(
-            message_id))
+        raise MessageTimeout("No answer for message {}".format(message_id))
 
     def register(self, func, event=None):
         """
@@ -241,7 +240,7 @@ class RecvThread(threading.Thread):
             except websocket.WebSocketConnectionClosedException:
                 if self.running:
                     self.core.reconnect()
-            except (ValueError, exceptions.ObjectError) as e:
+            except (ValueError, ObjectError) as e:
                 LOG.warning("Invalid message: {} ({})".format(message, e))
         # end while
         LOG.debug("RecvThread ended.")
@@ -252,7 +251,7 @@ class RecvThread(threading.Thread):
         try:
             cls = getattr(events, name)
         except AttributeError:
-            raise exceptions.ObjectError("Invalid event type {}".format(name))
+            raise ObjectError("Invalid event type {}".format(name))
         else:
             return cls.from_message(data)
 
