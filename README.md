@@ -13,7 +13,8 @@ PyPI package: https://pypi.python.org/pypi/pyobs
 
 Just run `pip install pyobs` in your Python venv or directly on your system.
 
-For manual install, git clone the github repo and copy the directory **obswebsocket** in your python project root.
+For manual install, git clone the github repo and copy the directory **pyobs** 
+in your python project root.
 
 **Requires**: websocket-client (from pip)
 
