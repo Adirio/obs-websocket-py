@@ -46,7 +46,7 @@ def generate_classes():
             f.write("\n")
             f.write("from .base_classes import Base{}\n".format(kind))
             f.write("\n\n")
-            for sec in data[kinds]:
+            for sec in sorted(data[kinds]):
                 for i in data[kinds][sec]:
                     f.write("class {}(Base{}):\n".format(i['name'], kind))
                     f.write("    \"\"\"\n")
